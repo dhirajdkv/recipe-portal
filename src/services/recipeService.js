@@ -1,5 +1,8 @@
 import api from './api';
 
+// Check if AI features are enabled
+const AI_FEATURES_ENABLED = process.env.REACT_APP_ENABLE_AI_FEATURES === 'true';
+
 // Mock data for development
 const MOCK_RECIPES = [
   {
@@ -96,6 +99,7 @@ export const recipeService = {
       
       // If we're in development and got no data, use mock data
       if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock data for recipe search');
         return {
           data: MOCK_RECIPES.filter(item => 
             item.name.toLowerCase().includes(query.toLowerCase())
@@ -103,17 +107,18 @@ export const recipeService = {
         };
       }
 
-      // If neither condition is met, return empty data
       return { data: [] };
     } catch (error) {
+      console.error('Error searching recipes:', error);
       if (process.env.NODE_ENV === 'development') {
+        console.log('Falling back to mock data due to error');
         return {
           data: MOCK_RECIPES.filter(item => 
             item.name.toLowerCase().includes(query.toLowerCase())
           )
         };
       }
-      throw error;
+      throw new Error('Failed to search recipes. Please try again later.');
     }
   },
 
@@ -122,11 +127,13 @@ export const recipeService = {
       const response = await api.get(`/recipes/${id}`);
       return response;
     } catch (error) {
+      console.error('Error fetching recipe:', error);
       if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock data for recipe details');
         const mockRecipe = MOCK_RECIPES.find(r => r.id === parseInt(id));
         return { data: mockRecipe || null };
       }
-      throw error;
+      throw new Error('Failed to fetch recipe details. Please try again later.');
     }
   },
 
@@ -136,19 +143,16 @@ export const recipeService = {
         recipeIds: recipeIds
       });
       
-      // If we got actual data from the API, use it
       if (response && response.ingredients) {
         return response;
       }
       
-      // If we're in development and got no data, use mock data
       if (process.env.NODE_ENV === 'development') {
-        // Get all selected recipes from mock data
+        console.log('Using mock data for consolidated list');
         const selectedRecipes = MOCK_RECIPES.filter(recipe => 
           recipeIds.includes(recipe.id.toString())
         );
         
-        // Combine all ingredients from selected recipes
         const allIngredients = selectedRecipes.reduce((acc, recipe) => {
           if (recipe.ingredients) {
             acc.push(...recipe.ingredients);
@@ -163,8 +167,9 @@ export const recipeService = {
 
       return { ingredients: [] };
     } catch (error) {
+      console.error('Error getting consolidated list:', error);
       if (process.env.NODE_ENV === 'development') {
-        // Same mock data logic as above for error case
+        console.log('Falling back to mock data due to error');
         const selectedRecipes = MOCK_RECIPES.filter(recipe => 
           recipeIds.includes(recipe.id.toString())
         );
@@ -180,17 +185,23 @@ export const recipeService = {
           ingredients: allIngredients
         };
       }
-      throw error;
+      throw new Error('Failed to get consolidated list. Please try again later.');
     }
   },
 
   generateRecipe: async (recipeName) => {
+    // Only allow recipe generation if AI features are enabled
+    if (!AI_FEATURES_ENABLED) {
+      throw new Error('AI recipe generation is not enabled');
+    }
+
     try {
       const response = await api.post('/recipes/generate', { name: recipeName });
       return response;
     } catch (error) {
+      console.error('Error generating recipe:', error);
       if (process.env.NODE_ENV === 'development') {
-        // Return mock generated recipe for development
+        console.log('Using mock data for recipe generation');
         return {
           name: recipeName,
           ingredients: [
@@ -213,7 +224,7 @@ export const recipeService = {
           ]
         };
       }
-      throw error;
+      throw new Error('Failed to generate recipe. Please try again later.');
     }
   },
 }; 
