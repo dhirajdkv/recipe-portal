@@ -130,19 +130,90 @@ export const recipeService = {
     }
   },
 
-  // Add more recipe-related API calls here
-  createRecipe: async (recipeData) => {
-    const response = await api.post('/recipes', recipeData);
-    return response;
+  getConsolidatedList: async (recipeIds) => {
+    try {
+      const response = await api.post('/recipes/consolidated-list', {
+        recipeIds: recipeIds
+      });
+      
+      // If we got actual data from the API, use it
+      if (response && response.ingredients) {
+        return response;
+      }
+      
+      // If we're in development and got no data, use mock data
+      if (process.env.NODE_ENV === 'development') {
+        // Get all selected recipes from mock data
+        const selectedRecipes = MOCK_RECIPES.filter(recipe => 
+          recipeIds.includes(recipe.id.toString())
+        );
+        
+        // Combine all ingredients from selected recipes
+        const allIngredients = selectedRecipes.reduce((acc, recipe) => {
+          if (recipe.ingredients) {
+            acc.push(...recipe.ingredients);
+          }
+          return acc;
+        }, []);
+
+        return {
+          ingredients: allIngredients
+        };
+      }
+
+      return { ingredients: [] };
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        // Same mock data logic as above for error case
+        const selectedRecipes = MOCK_RECIPES.filter(recipe => 
+          recipeIds.includes(recipe.id.toString())
+        );
+        
+        const allIngredients = selectedRecipes.reduce((acc, recipe) => {
+          if (recipe.ingredients) {
+            acc.push(...recipe.ingredients);
+          }
+          return acc;
+        }, []);
+
+        return {
+          ingredients: allIngredients
+        };
+      }
+      throw error;
+    }
   },
 
-  updateRecipe: async (id, recipeData) => {
-    const response = await api.put(`/recipes/${id}`, recipeData);
-    return response;
+  generateRecipe: async (recipeName) => {
+    try {
+      const response = await api.post('/recipes/generate', { name: recipeName });
+      return response;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        // Return mock generated recipe for development
+        return {
+          name: recipeName,
+          ingredients: [
+            { name: 'Onion', quantity: 2, unit: 'medium' },
+            { name: 'Tomato', quantity: 3, unit: 'large' },
+            { name: 'Ginger', quantity: 1, unit: 'inch' },
+            { name: 'Garlic', quantity: 4, unit: 'cloves' },
+            { name: 'Turmeric', quantity: 1, unit: 'tsp' },
+            { name: 'Red Chili Powder', quantity: 1, unit: 'tsp' },
+            { name: 'Garam Masala', quantity: 1, unit: 'tsp' },
+            { name: 'Salt', quantity: 0, unit: 'to taste' }
+          ],
+          instructions: [
+            'Chop the onions and tomatoes',
+            'Heat oil in a pan',
+            'Add chopped onions and sauté till golden brown',
+            'Add ginger garlic paste and sauté for 2 minutes',
+            'Add tomatoes and cook till soft',
+            'Add all the spices and cook for 5 minutes'
+          ]
+        };
+      }
+      throw error;
+    }
   },
-
-  deleteRecipe: async (id) => {
-    const response = await api.delete(`/recipes/${id}`);
-    return response;
-  }
 }; 
