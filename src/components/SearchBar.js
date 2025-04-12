@@ -80,6 +80,32 @@ const SearchBar = ({ onSearchResults }) => {
   }, [query]);
 
   const handleSuggestionClick = async (suggestion) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Fetch complete recipe details
+      const recipeId = suggestion.id || suggestion._id;
+      const recipeDetails = await recipeService.getRecipeById(recipeId);
+      
+      if (recipeDetails) {
+        setSelectedRecipe(recipeDetails);
+        setShowModal(true);
+      } else {
+        setError('Failed to load recipe details');
+      }
+    } catch (error) {
+      const handledError = handleError(error);
+      setError(handledError.message);
+    } finally {
+      setIsLoading(false);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleAddToList = (e, suggestion) => {
+    e.stopPropagation(); // Prevent triggering the handleSuggestionClick
+    
     if (selectedRecipes.length >= 4) {
       setError('You can select up to 4 recipes');
       return;
@@ -90,9 +116,8 @@ const SearchBar = ({ onSearchResults }) => {
       return;
     }
 
-    setQuery('');
-    setShowSuggestions(false);
     setSelectedRecipes([...selectedRecipes, suggestion]);
+    setError(null);
   };
 
   const removeSelectedRecipe = (recipeId) => {
@@ -126,8 +151,28 @@ const SearchBar = ({ onSearchResults }) => {
 
   const handleSaveGeneratedRecipe = async (recipe) => {
     try {
-      const savedRecipe = await recipeService.createRecipe(recipe);
-      setSelectedRecipes([...selectedRecipes, savedRecipe]);
+      // Process ingredients to ensure they have proper format
+      const processedIngredients = recipe.ingredients.map((ingredient, index) => ({
+        ...ingredient,
+        id: `ingredient-${index}`, // Add ID for tracking
+        name: ingredient.name || '',
+        quantity: ingredient.quantity || 0,
+        unit: ingredient.unit || ''
+      }));
+      
+      // Create a recipe object with the processed ingredients
+      const processedRecipe = {
+        ...recipe,
+        ingredients: processedIngredients
+      };
+      
+      // Set the generated recipe as the selected recipe
+      setSelectedRecipes([processedRecipe]);
+      
+      // Set processed ingredients for the consolidated list
+      setConsolidatedIngredients(processedIngredients);
+      setShowConsolidatedList(true);
+      
       setShowGenerateModal(false);
       setQuery('');
       setShowSuggestions(false);
@@ -218,17 +263,31 @@ const SearchBar = ({ onSearchResults }) => {
           <div className="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-40">
             {suggestions.length > 0 ? (
               suggestions.map((suggestion) => (
-                <button
+                <div 
                   key={suggestion._id}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors duration-150 flex items-center space-x-3"
-                  disabled={selectedRecipes.some(recipe => recipe._id === suggestion._id)}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer"
                 >
-                  <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <span className="text-gray-700 truncate">{suggestion.name}</span>
-                </button>
+                  <div 
+                    className="flex items-center space-x-3 flex-grow"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                  >
+                    <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span className="text-gray-700 truncate">{suggestion.name}</span>
+                  </div>
+                  <button
+                    onClick={(e) => handleAddToList(e, suggestion)}
+                    className="ml-2 text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-100 transition-colors"
+                    disabled={selectedRecipes.some(recipe => recipe._id === suggestion._id)}
+                    title={selectedRecipes.some(recipe => recipe._id === suggestion._id) ? 
+                      "Already added to list" : "Add to grocery list"}
+                  >
+                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </button>
+                </div>
               ))
             ) : noResults ? (
               <div className="p-4">
