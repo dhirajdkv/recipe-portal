@@ -1,7 +1,7 @@
 import api from './api';
 
 // Check if AI features are enabled
-const AI_FEATURES_ENABLED = process.env.REACT_APP_ENABLE_AI_FEATURES == 'enabled';
+const AI_FEATURES_ENABLED = process.env.REACT_APP_ENABLE_AI_FEATURES === 'enabled';
 // Mock data for development
 const MOCK_RECIPES = [
   {
