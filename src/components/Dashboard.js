@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SearchBar from './SearchBar';
+import RecipeCard from './RecipeCard';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,41 +22,63 @@ const Dashboard = () => {
     navigate('/login');
   };
 
+  const handleSearchResults = (results) => {
+    setSearchResults(results);
+  };
+
   if (!user) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-          <div className="max-w-md mx-auto">
-            <div className="divide-y divide-gray-200">
-              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                <div className="flex items-center space-x-4">
-                  <img
-                    className="h-12 w-12 rounded-full"
-                    src={user.picture}
-                    alt={user.name}
-                  />
-                  <div>
-                    <h2 className="text-xl font-bold">{user.name}</h2>
-                    <p className="text-gray-600">{user.email}</p>
-                  </div>
-                </div>
-                <div className="pt-4">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    Logout
-                  </button>
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <img
+                className="h-10 w-10 rounded-full"
+                src={user.picture}
+                alt={user.name}
+              />
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{user.name}</h2>
+                <p className="text-sm text-gray-500">{user.email}</p>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Logout
+            </button>
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4 text-center">
+            Find Your Perfect Recipe
+          </h1>
+          <SearchBar onSearchResults={handleSearchResults} />
+        </div>
+
+        {/* Recipe Grid */}
+        {searchResults.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+            {searchResults.map((recipe) => (
+              <RecipeCard key={recipe._id} recipe={recipe} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-12 text-center text-gray-500">
+            Search for recipes to get started
+          </div>
+        )}
+      </main>
     </div>
   );
 };
