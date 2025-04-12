@@ -28,58 +28,31 @@ export const ErrorMessages = {
   [ErrorTypes.UNKNOWN]: 'An unexpected error occurred.',
 };
 
-// Error handler function
+/**
+ * Handles and normalizes errors for consistent display in the UI
+ * @param {Error} error - The error object to handle
+ * @returns {Object} A normalized error object with message property
+ */
 export const handleError = (error) => {
-  console.error('Error details:', error);
+  // Extract message from API errors if available
+  if (error?.response?.data?.message) {
+    return {
+      message: error.response.data.message,
+      status: error.response.status
+    };
+  }
 
-  if (error instanceof AppError) {
+  // Extract message from standard error
+  if (error?.message) {
     return {
       message: error.message,
-      type: error.type,
-      statusCode: error.statusCode,
+      status: error?.status || 500
     };
   }
 
-  // Handle network errors
-  if (!error.response) {
-    return {
-      message: ErrorMessages[ErrorTypes.NETWORK],
-      type: ErrorTypes.NETWORK,
-      statusCode: 0,
-    };
-  }
-
-  // Handle different HTTP status codes
-  switch (error.response.status) {
-    case 401:
-      return {
-        message: ErrorMessages[ErrorTypes.AUTH],
-        type: ErrorTypes.AUTH,
-        statusCode: 401,
-      };
-    case 404:
-      return {
-        message: ErrorMessages[ErrorTypes.NOT_FOUND],
-        type: ErrorTypes.NOT_FOUND,
-        statusCode: 404,
-      };
-    case 422:
-      return {
-        message: ErrorMessages[ErrorTypes.VALIDATION],
-        type: ErrorTypes.VALIDATION,
-        statusCode: 422,
-      };
-    case 500:
-      return {
-        message: ErrorMessages[ErrorTypes.SERVER],
-        type: ErrorTypes.SERVER,
-        statusCode: 500,
-      };
-    default:
-      return {
-        message: ErrorMessages[ErrorTypes.UNKNOWN],
-        type: ErrorTypes.UNKNOWN,
-        statusCode: error.response?.status || 0,
-      };
-  }
+  // Default error
+  return {
+    message: 'An unexpected error occurred. Please try again.',
+    status: 500
+  };
 }; 
