@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import { recipeService } from '../../services/recipeService';
-import { handleError } from '../../utils/errorHandler';
 
 const ConsolidatedList = ({ ingredients: initialIngredients, onClose, recipeIds }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // eslint-disable-next-line
   const [currentIngredients, setCurrentIngredients] = useState(initialIngredients);
 
   // Format ingredient text for display
@@ -16,25 +13,6 @@ const ConsolidatedList = ({ ingredients: initialIngredients, onClose, recipeIds 
     return ingredient.unit 
       ? `${quantity} ${ingredient.unit} ${ingredient.name}`
       : `${quantity} ${ingredient.name}`;
-  };
-
-  const handleAIConsolidation = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await recipeService.getAIConsolidatedList(recipeIds);
-      if (response && response.ingredients) {
-        setCurrentIngredients(response.ingredients);
-      } else {
-        setError('Failed to get AI consolidated list');
-      }
-    } catch (error) {
-      const handledError = handleError(error);
-      setError(handledError.message);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -52,12 +30,6 @@ const ConsolidatedList = ({ ingredients: initialIngredients, onClose, recipeIds 
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Consolidated Grocery List</h2>
         </div>
-
-        {error && (
-          <div className="mb-4 text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
-            {error}
-          </div>
-        )}
         
         <div className="space-y-4">
           {currentIngredients.map((ingredient, index) => (
